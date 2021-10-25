@@ -39,5 +39,22 @@ router.post('/sign-up', async function(req, res, next) {
 
 });
 
+//ROUTE SIGN-IN
+
+router.post('/sign-in', async function(req, res, next) {
+  
+  let result = false;
+
+  let findUser = await usersModel.findOne({email:req.body.emailFromFront})
+
+  let password = req.body.passwordFromFront;
+
+  if (bcrypt.compareSync(password, findUser.password)) {
+    res.json({ login: true, token: findUser.token });
+   } else {
+    res.json({ login: false });
+   }
+});
+
 
 module.exports = router;
