@@ -7,12 +7,12 @@ var usersSchema = mongoose.Schema({
     email: String,
     password: String,
     token: String,
-    birthday: Date,
+    birthday: String,
     nationality: String,
-    interests: [String],
-    trips: [TripSchema],
-    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'activities' }],
-    dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'activities' }]
+    //interests: [String],
+    //trips: [TripSchema],
+    //likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'activities' }],
+    //dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'activities' }]
 
 });
 

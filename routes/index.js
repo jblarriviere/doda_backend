@@ -4,6 +4,9 @@ var mongoose = require('mongoose');
 var uid2 = require('uid2');
 var bcrypt = require('bcrypt')
 
+var usersModel = require('../models/users')
+
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
