@@ -7,11 +7,15 @@
   },
   "dependencies": {
     "bcrypt": "^5.0.1",
+    "axios": "^0.23.0",
+    "cloudinary": "^1.27.1",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "~4.16.1",
+    "faker": "^5.5.3",
     "mongoose": "^6.0.12",
     "morgan": "~1.9.1",
-    "uid2": "^1.0.0"
+    "uid2": "^1.0.0",
+    "striptags": "^3.2.0"
   }
 }
