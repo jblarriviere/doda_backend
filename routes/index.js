@@ -146,7 +146,6 @@ router.post('/sign-up', async function (req, res, next) {
 
   if (!findUser) {
 
-<<<<<<< HEAD
     var newUser = new usersModel({
       username: req.body.usernameFromFront,
       email: req.body.emailFromFront,
@@ -163,13 +162,6 @@ router.post('/sign-up', async function (req, res, next) {
       res.json({ result, token: userSave.token })
     }
   }
-=======
-  if (userSave) {
-    result = true
-  }
-
-  res.json({ result, token: userSave.token })
->>>>>>> 1cc3bf4286f74dffeb1274a25575d00ddb123148
 
 
   res.json({ result })
