@@ -10,15 +10,7 @@ const striptags = require('striptags');
 var usersModel = require('../models/users')
 const Activities = require('../models/activities');
 
-const parseDate = strDate => {
-  let newStr = strDate.split('/')
-    .reverse()
-    .join('-');
-  let date = new Date(newStr);
-  return date;
-}
-
-const parse_occurrences = require('../helpers/date_helper'); // helper pour formater les dates d'ouverture des events
+const dateHelper = require('../helpers/date_helper'); // helper pour formater les dates d'ouverture des events
 
 const googleAPIkey = 'AIzaSyBj3ezj3EuZSPYqywoLyZta1KjksX7Y0Og';
 cloudinary.config({
@@ -124,7 +116,7 @@ router.get('/fill-activities-paris/:type', async function (req, res, next) {
       website: event.fields.url,
       pricing: price,
       category: req.params.type,
-      openingHours: event.fields.occurrences ? parse_occurrences(event.fields.occurrences) : [{ open: { day: 0, time: "0000" } }],
+      openingHours: event.fields.occurrences ? dateHelper.parseOccurrences(event.fields.occurrences) : [{ open: { day: 0, time: "0000" } }],
     });
 
     await newActivity.save();
@@ -151,7 +143,7 @@ router.post('/sign-up', async function (req, res, next) {
       email: req.body.emailFromFront,
       password: hash,
       token: uid2(32),
-      birthday: parseDate(req.body.birthdayFromFront),
+      birthday: dateHelper.parseDate(req.body.birthdayFromFront),
       nationality: req.body.nationalityFromFront
     })
 
@@ -160,11 +152,13 @@ router.post('/sign-up', async function (req, res, next) {
     if (userSave) {
       result = true
       res.json({ result, token: userSave.token })
+    } else {
+      res.json({ result });
     }
+  } else {
+    res.json({ result });
   }
 
-
-  res.json({ result })
 });
 
 //ROUTE SIGN-IN
@@ -181,9 +175,10 @@ router.post('/sign-in', async function (req, res, next) {
     } else {
       res.json({ login: false });
     }
-  } 
+  } else {
+    res.json({ login: false })
+  }
 
-      res.json({login: false})
 });
 
 

@@ -7,7 +7,7 @@ const getTime = strDate => {
 }
 
 // transforme les occurences d'un évent Ville de Paris au format google periods
-const parse_occurrences = str => {
+const parseOccurrences = str => {
   str.split(';').map(occurrence => {
     let date = new Date(occurrence.split('_')[0]);
     let day = date.getDay();
@@ -26,5 +26,13 @@ const parse_occurrences = str => {
   })
 }
 
-module.exports = parse_occurrences;
+const parseDate = strDate => {
+  let newStr = strDate.split('/')
+    .reverse()
+    .join('-');
+  let date = new Date(newStr);
+  return date;
+}
+
+module.exports = { parseOccurrences, parseDate };
 
