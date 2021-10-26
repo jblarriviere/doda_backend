@@ -181,5 +181,8 @@ router.post('/sign-in', async function (req, res, next) {
 
 });
 
-
+router.get('/bdd', async function (req, res, next) {
+  let activity = await Activities.find()
+  res.json({activity})
+})
 module.exports = router;
