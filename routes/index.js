@@ -181,6 +181,7 @@ router.post('/sign-in', async function (req, res, next) {
 
 });
 
+//Petite route helper pour récup les activités de la bdd
 router.get('/bdd', async function (req, res, next) {
   let activity = await Activities.find()
   res.json({activity})
