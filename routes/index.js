@@ -254,6 +254,58 @@ router.get('/addrandomtrip/:usertoken', async function (req, res, next) {
 //Petite route helper pour récup les activités de la bdd
 router.get('/bdd', async function (req, res, next) {
   let activity = await Activities.find()
-  res.json({activity})
+  res.json({ activity })
+})
+
+//Get all categories
+router.get('/list-categories', async function (req, res, next) {
+  const result = await Activities.aggregate([
+    {
+      '$group': {
+        '_id': '$category',
+        'count': {
+          '$sum': 1
+        }
+      }
+    }, {
+      '$project': {
+        '_id': 0,
+        'name': '$_id'
+      }
+    }
+  ])
+  const categories = result.map(item => item.name).map(item => item.replace('_', ' ')).map(item => item.toUpperCase())
+  res.json({ status: 'success', categories })
+})
+
+router.get('/random-trip', async function (req, res, next) {
+  const user = await usersModel.findById('61791b76cdbb6775388385ca').populate('trips.activities');
+  const ramdonTrip = user.trips[Math.floor(Math.random() * user.trips.length)]
+  if (ramdonTrip) {
+    res.json({ status: 'success', trip: ramdonTrip })
+  }
+  else {
+  }
+});
+
+router.get('/refresh-activity/:activityId', async function (req, res, next) {
+  const activity = await Activities.findById(req.params.activityId);
+  const findActivities = await Activities.aggregate(
+    [
+      {
+        '$match': {
+          'category': activity.category,
+          '_id': {
+            '$ne': activity._id
+          }
+        }
+      }, {
+        '$sample': {
+          'size': 1
+        }
+      }
+    ])
+
+  res.json({ status: 'success', activity: findActivities.length > 0 ? findActivities[0] : [] })
 })
 module.exports = router;
