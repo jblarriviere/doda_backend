@@ -206,8 +206,6 @@ router.post('/trust-doda', async function (req, res, next) {
   }
 
 
-
-
   if (!req.body.address) {
     error.push('Please add a location')
     console.log(error)
@@ -228,12 +226,15 @@ router.post('/trust-doda', async function (req, res, next) {
       console.log(total)
       console.log(queryTrip.budget, 'is budget');
     } while (total > queryTrip.budget)
-let filteredCat = []
+
+    //category list from bdd//
     let activities = await Activities.find();
     let categories = activities.map(act => act.category)
   
-    let arr = categories.filter((item, index)=> categories.indexOf(item)== index)
-    console.log('the savior: ', arr)
+    let filteredCat = categories.filter((item, index)=> categories.indexOf(item)== index)
+    console.log('the saviour: ', filteredCat)
+
+
     console.log('three random budget activities : ', getThree)
     res.json({ result: true, queryTrip })
   }
