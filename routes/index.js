@@ -136,7 +136,23 @@ router.post('/sign-up', async function (req, res, next) {
 
   var findUser = await usersModel.findOne({ email: req.body.emailFromFront })
 
-  if (!findUser) {
+  var error = []
+
+  if (findUser != null) {
+    error.push('User already logged in')
+  }
+
+  if (
+    req.body.usernameFromFront == ''
+    || req.body.emailFromFront == ''
+    || req.body.passwordFromFront == ''
+    || req.body.birthdayFromFront == ''
+    || req.body.nationalityFromFront == ''
+  ) {
+    error.push('Please fill the empty field')
+  }
+
+  if (!findUser && error.length == 0) {
 
     var newUser = new usersModel({
       username: req.body.usernameFromFront,
@@ -156,7 +172,7 @@ router.post('/sign-up', async function (req, res, next) {
       res.json({ result });
     }
   } else {
-    res.json({ result });
+    res.json({ result, error });
   }
 
 });
@@ -165,18 +181,31 @@ router.post('/sign-up', async function (req, res, next) {
 
 router.post('/sign-in', async function (req, res, next) {
 
-  let findUser = await usersModel.findOne({ email: req.body.emailFromFront })
+  var error = []
 
-  if (findUser) {
-    let password = req.body.passwordFromFront;
+  if (req.body.emailFromFront == ''
+    || req.body.passwordFromFront == ''
+  ) {
+    error.push('Please fill the empty field')
+  }
 
-    if (bcrypt.compareSync(password, findUser.password)) {
-      res.json({ login: true, token: findUser.token });
-    } else {
-      res.json({ login: false });
+  if (error.length == 0) {
+    let findUser = await usersModel.findOne({ email: req.body.emailFromFront })
+
+    if (findUser) {
+
+      if (bcrypt.compareSync(req.body.passwordFromFront, findUser.password)) {
+        res.json({ login: true, token: findUser.token });
+      } else {
+        error.push('Wrong password')
+        res.json({ login: false, error });
+      }
     }
-  } else {
-    res.json({ login: false })
+    else {
+      error.push('Wrong email')
+      res.json({ login: false, error })
+
+    }
   }
 
 });
