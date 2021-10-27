@@ -11,6 +11,7 @@ var usersModel = require('../models/users')
 const Activities = require('../models/activities');
 
 const dateHelper = require('../helpers/date_helper'); // helper pour formater les dates d'ouverture des events
+const { query } = require('express');
 
 const googleAPIkey = 'AIzaSyBj3ezj3EuZSPYqywoLyZta1KjksX7Y0Og';
 cloudinary.config({
@@ -184,6 +185,59 @@ router.post('/sign-in', async function (req, res, next) {
 //Petite route helper pour récup les activités de la bdd
 router.get('/bdd', async function (req, res, next) {
   let activity = await Activities.find()
-  res.json({activity})
+  res.json({ activity })
 })
+
+
+router.get('categories', async function (req, res, next) {
+
+})
+
+router.post('/trust-doda', async function (req, res, next) {
+
+  let error = [];
+
+  let queryTrip = {
+    categories: JSON.parse(req.body.categories.toLowerCase()),
+    location: req.body.address,
+    distance: Number(req.body.distance),
+    budget: Number(req.body.budget),
+    selectedDate: Date(req.body.selectedDate),
+  }
+
+
+
+
+  if (!req.body.address) {
+    error.push('Please add a location')
+    console.log(error)
+    res.json({ result: false, error })
+  } else {
+    let activityList = await Activities.find({ category: { $in: queryTrip.categories } });
+
+    let getThree = [];
+    let total;
+    do {
+      getThree = [];
+      for (let i = 0; i < 3; i++) {
+        let random = activityList[Math.floor(Math.random() * activityList.length)];
+        getThree.push(random);
+
+      }
+      total = getThree.reduce((a, b) => (a + b.pricing), 0)
+      console.log(total)
+      console.log(queryTrip.budget, 'is budget');
+    } while (total > queryTrip.budget)
+let filteredCat = []
+    let activities = await Activities.find();
+    let categories = activities.map(act => act.category)
+  
+    let arr = categories.filter((item, index)=> categories.indexOf(item)== index)
+    console.log('the savior: ', arr)
+    console.log('three random budget activities : ', getThree)
+    res.json({ result: true, queryTrip })
+  }
+})
+
+
 module.exports = router;
