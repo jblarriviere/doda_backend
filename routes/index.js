@@ -6,6 +6,7 @@ var bcrypt = require('bcrypt')
 const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 const striptags = require('striptags');
+const faker = require('faker')
 
 var usersModel = require('../models/users')
 const Activities = require('../models/activities');
@@ -178,6 +179,46 @@ router.post('/sign-in', async function (req, res, next) {
   } else {
     res.json({ login: false })
   }
+
+});
+
+// get the trips of a user
+router.get('/usertrips/:usertoken', async function (req, res, next) {
+
+  let trips = [];
+  let result = false;
+  let user = await usersModel.findOne({token: req.params.usertoken}).populate('trips.activities');
+  
+  if(user) {
+    result = true;
+    trips = user.trips;
+  }
+
+  res.json({result, trips});
+
+});
+
+// generate a random trip of 3 activities for a user
+router.get('/addrandomtrip/:usertoken', async function (req, res, next) {
+
+  let user = await usersModel.findOne({ token: req.params.usertoken });
+  let activities = await Activities.find();
+
+  let newTrip = {
+    title: `My ${faker.commerce.productAdjective()} trip`,
+    budget: 30,
+    date: new Date(2021, Math.floor(Math.random() * 12), Math.floor(Math.random() * 27)),
+    latitude: 48.887552,
+    longitude: 2.303735,
+    activities: []
+  }
+
+  for(let i = 0 ; i < 3 ; i++ ) {
+    newTrip.activities.push(activities[Math.floor(Math.random() * activities.length)]._id);
+  }
+
+  user.trips = [...user.trips, newTrip];
+  await user.save();
 
 });
 

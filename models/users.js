@@ -3,8 +3,11 @@ var uid2 = require('uid2');
 var bcrypt = require('bcrypt')
 
 var TripSchema = mongoose.Schema({
+    title: String,
     budget: Number,
     date: Date,
+    latitude: Number,
+    longitude: Number,
     activities: [{type: mongoose.Schema.Types.ObjectId, ref: 'activities'}]
 })
 
