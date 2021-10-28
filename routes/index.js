@@ -12,6 +12,7 @@ var usersModel = require('../models/users')
 const Activities = require('../models/activities');
 
 const dateHelper = require('../helpers/date_helper'); // helper pour formater les dates d'ouverture des events
+const { query } = require('express');
 
 const googleAPIkey = 'AIzaSyBj3ezj3EuZSPYqywoLyZta1KjksX7Y0Og';
 cloudinary.config({
@@ -255,6 +256,7 @@ router.get('/addrandomtrip/:usertoken', async function (req, res, next) {
 router.get('/bdd', async function (req, res, next) {
   let activity = await Activities.find()
   res.json({ activity })
+<<<<<<< HEAD
 })
 
 //Get all categories
@@ -307,5 +309,113 @@ router.get('/refresh-activity/:activityId', async function (req, res, next) {
     ])
 
   res.json({ status: 'success', activity: findActivities.length > 0 ? findActivities[0] : [] })
+=======
+>>>>>>> trustDoda
 })
+
+
+router.get('/categories', async function (req, res, next) {
+  //category list from bdd//
+  let activities = await Activities.find();
+  let categories = activities.map(act => act.category)
+
+  let filteredCat = categories.filter((item, index) => categories.indexOf(item) == index)
+  console.log('all categories from bdd : ', filteredCat)
+
+  res.json({ categories: filteredCat })
+})
+
+router.post('/trust-doda', async function (req, res, next) {
+
+
+  //  => if user doesnt specify a category, default behavior == all categories //
+  let activities = await Activities.find();
+  let categories = activities.map(act => act.category)
+
+  let filteredCat = categories.filter((item, index) => categories.indexOf(item) == index)
+
+  let queryCategories = JSON.parse(req.body.categories.toLowerCase());
+
+  if (queryCategories === undefined || queryCategories.length == 0) {
+    queryCategories = filteredCat;
+  }
+
+  // User Wishes //
+  let queryTrip = {
+    categories: queryCategories,
+    address: req.body.address,
+    longitude: Number(req.body.longitude),
+    latitude: Number(req.body.latitude),
+    distance: Number(req.body.distance),
+    budget: Number(req.body.budget),
+    selectedDate: Date(req.body.selectedDate),
+  }
+
+  // Push error if address isnt specify 
+  // TO DO LIST ==> VERIFY IF ADDRESS EXIST 
+  let error = [];
+  if (!req.body.address) {
+    error.push('Please add a location')
+    console.log(error)
+    res.json({ result: false, error })
+
+  } else {
+
+    //FILTER BY COORDS, MAXIMUM DISTANCE RADIUS in meters, and CATEGORIES   
+    let filterGeo = await Activities.find(
+      {
+        "loc": {
+          $near: {
+            $geometry: {
+              type: "Point",
+              coordinates: [queryTrip.longitude, queryTrip.latitude]
+            },
+            $maxDistance: Number(queryTrip.distance * 1000)
+          }
+        },
+        category: { $in: queryTrip.categories }
+      })
+
+
+    // GET THREE RANDOM ACTIVITIES FROM FILTER UNTIL IT MATCHES THE BUDGET
+    let myDoda = [];
+    let total;
+    do {
+      myDoda = [];
+      for (let i = 0; i < 3; i++) {
+        let random = filterGeo[Math.floor(Math.random() * filterGeo.length)];
+        myDoda.push(random);
+
+      }
+      total = myDoda.reduce((a, b) => (a + b.pricing), 0)
+      console.log('trip total : ', total)
+      console.log(queryTrip.budget, 'is budget');
+    } while (total > queryTrip.budget)
+
+
+    //********************************  D O  N O T  E R A S E  ==>  M U S T  B E  M O V E D  T O  A P P R O P R I A T E  R O U T E *****************************//
+    //****** FORMAT GEOJSON BDD (index '2dSphere' on coll activities created via compass) ********//
+
+    //   let activitiesGeo = await Activities.find()
+    //   activitiesGeo.forEach(async function(doc) {
+    //     var point = {
+    //         _id : doc._id,
+    //         loc : {
+    //             type : "Point",
+    //             coordinates : [doc.longitude, doc.latitude]
+    //         }
+    //     };
+    //     await Activities.updateOne(doc, point);
+    // });
+    // ******************************************************************************************* //
+
+    
+    console.log('USER WISHES : ', queryTrip)
+    console.log('YOUR GENERATED TRIP : ', myDoda)
+
+    res.json({ result: true, queryTrip, myDoda })
+  }
+})
+
+
 module.exports = router;
