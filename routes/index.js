@@ -256,4 +256,24 @@ router.get('/bdd', async function (req, res, next) {
   let activity = await Activities.find()
   res.json({activity})
 })
+
+// DELETE USER
+router.delete('/delete-user', async function (req, res, next) {
+
+  var result = false
+  
+  let deleteUser = await usersModel.deleteOne(
+    {token: req.query.tokenFromFront}
+  )
+  
+  console.log(deleteUser)
+
+  if(deleteUser.deletedCount != 0){
+    result = true
+  }
+  
+  res.json({result})
+})
+
+
 module.exports = router;
