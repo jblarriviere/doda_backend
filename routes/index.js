@@ -256,7 +256,6 @@ router.get('/addrandomtrip/:usertoken', async function (req, res, next) {
 router.get('/bdd', async function (req, res, next) {
   let activity = await Activities.find()
   res.json({ activity })
-<<<<<<< HEAD
 })
 
 //Get all categories
@@ -309,8 +308,8 @@ router.get('/refresh-activity/:activityId', async function (req, res, next) {
     ])
 
   res.json({ status: 'success', activity: findActivities.length > 0 ? findActivities[0] : [] })
-=======
->>>>>>> trustDoda
+
+
 })
 
 
@@ -415,6 +414,25 @@ router.post('/trust-doda', async function (req, res, next) {
 
     res.json({ result: true, queryTrip, myDoda })
   }
+})
+
+// DELETE USER
+router.delete('/delete-user', async function (req, res, next) {
+
+  var result = false
+  
+  let deleteUser = await usersModel.deleteOne(
+    {token: req.query.tokenFromFront}
+  )
+  
+  console.log(deleteUser)
+
+  if(deleteUser.deletedCount != 0){
+    result = true
+  }
+  
+  res.json({result})
+
 })
 
 
