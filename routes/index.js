@@ -284,6 +284,7 @@ router.post('/trust-doda', async function (req, res, next) {
     // });
     // ******************************************************************************************* //
 
+    
     console.log('USER WISHES : ', queryTrip)
     console.log('YOUR GENERATED TRIP : ', myDoda)
 
