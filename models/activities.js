@@ -47,6 +47,7 @@ const activitySchema = mongoose.Schema({
     type: Number,
     default: () => Math.floor(Math.random() * 151)
   },
+  loc: Object,
   googleId: String
 });
 

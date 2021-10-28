@@ -189,54 +189,105 @@ router.get('/bdd', async function (req, res, next) {
 })
 
 
-router.get('categories', async function (req, res, next) {
+router.get('/categories', async function (req, res, next) {
+  //category list from bdd//
+  let activities = await Activities.find();
+  let categories = activities.map(act => act.category)
 
+  let filteredCat = categories.filter((item, index) => categories.indexOf(item) == index)
+  console.log('all categories from bdd : ', filteredCat)
+
+  res.json({ categories: filteredCat })
 })
 
 router.post('/trust-doda', async function (req, res, next) {
 
-  let error = [];
 
+  //  => if user doesnt specify a category, default behavior == all categories //
+  let activities = await Activities.find();
+  let categories = activities.map(act => act.category)
+
+  let filteredCat = categories.filter((item, index) => categories.indexOf(item) == index)
+
+  let queryCategories = JSON.parse(req.body.categories.toLowerCase());
+
+  if (queryCategories === undefined || queryCategories.length == 0) {
+    queryCategories = filteredCat;
+  }
+
+  // User Wishes //
   let queryTrip = {
-    categories: JSON.parse(req.body.categories.toLowerCase()),
-    location: req.body.address,
+    categories: queryCategories,
+    address: req.body.address,
+    longitude: Number(req.body.longitude),
+    latitude: Number(req.body.latitude),
     distance: Number(req.body.distance),
     budget: Number(req.body.budget),
     selectedDate: Date(req.body.selectedDate),
   }
 
-
+  // Push error if address isnt specify 
+  // TO DO LIST ==> VERIFY IF ADDRESS EXIST 
+  let error = [];
   if (!req.body.address) {
     error.push('Please add a location')
     console.log(error)
     res.json({ result: false, error })
-  } else {
-    let activityList = await Activities.find({ category: { $in: queryTrip.categories } });
 
-    let getThree = [];
+  } else {
+
+    //FILTER BY COORDS, MAXIMUM DISTANCE RADIUS in meters, and CATEGORIES   
+    let filterGeo = await Activities.find(
+      {
+        "loc": {
+          $near: {
+            $geometry: {
+              type: "Point",
+              coordinates: [queryTrip.longitude, queryTrip.latitude]
+            },
+            $maxDistance: Number(queryTrip.distance * 1000)
+          }
+        },
+        category: { $in: queryTrip.categories }
+      })
+
+
+    // GET THREE RANDOM ACTIVITIES FROM FILTER UNTIL IT MATCHES THE BUDGET
+    let myDoda = [];
     let total;
     do {
-      getThree = [];
+      myDoda = [];
       for (let i = 0; i < 3; i++) {
-        let random = activityList[Math.floor(Math.random() * activityList.length)];
-        getThree.push(random);
+        let random = filterGeo[Math.floor(Math.random() * filterGeo.length)];
+        myDoda.push(random);
 
       }
-      total = getThree.reduce((a, b) => (a + b.pricing), 0)
-      console.log(total)
+      total = myDoda.reduce((a, b) => (a + b.pricing), 0)
+      console.log('trip total : ', total)
       console.log(queryTrip.budget, 'is budget');
     } while (total > queryTrip.budget)
 
-    //category list from bdd//
-    let activities = await Activities.find();
-    let categories = activities.map(act => act.category)
-  
-    let filteredCat = categories.filter((item, index)=> categories.indexOf(item)== index)
-    console.log('the saviour: ', filteredCat)
 
+    //********************************  D O  N O T  E R A S E  ==>  M U S T  B E  M O V E D  T O  A P P R O P R I A T E  R O U T E *****************************//
+    //****** FORMAT GEOJSON BDD (index '2dSphere' on coll activities created via compass) ********//
 
-    console.log('three random budget activities : ', getThree)
-    res.json({ result: true, queryTrip })
+    //   let activitiesGeo = await Activities.find()
+    //   activitiesGeo.forEach(async function(doc) {
+    //     var point = {
+    //         _id : doc._id,
+    //         loc : {
+    //             type : "Point",
+    //             coordinates : [doc.longitude, doc.latitude]
+    //         }
+    //     };
+    //     await Activities.updateOne(doc, point);
+    // });
+    // ******************************************************************************************* //
+
+    console.log('USER WISHES : ', queryTrip)
+    console.log('YOUR GENERATED TRIP : ', myDoda)
+
+    res.json({ result: true, queryTrip, myDoda })
   }
 })
 
