@@ -435,5 +435,41 @@ router.delete('/delete-user', async function (req, res, next) {
 
 })
 
+// ROUTE SAVE TRIP
+
+router.post('/saveTrip', async function (req, res, next) {
+
+  let result = false;
+  let user = await usersModel.findOne({token: req.body.user});
+
+  if(user) {
+    user.trips = [...user.trips, JSON.parse(req.body.tripData)];
+    let savedUser = await user.save();  
+    if(savedUser) {
+      result = true;
+    }
+  }
+  res.json({result});
+
+});
+
+// ROUTE EDIT TRIP
+router.put('/updateTrip', async function (req, res, next) {
+
+  let result = false;
+  let user = await usersModel.findOne({ token: req.body.user });
+
+  if(user) {
+     user.trips = [...user.trips.filter(trip => trip._id != req.body.tripId), JSON.parse(req.body.tripData)];
+    let savedUser = await user.save();
+    if(savedUser) {
+      result = true;
+    }
+  }
+ 
+  res.json({ result });
+
+});
+
 
 module.exports = router;
