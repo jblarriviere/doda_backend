@@ -13,7 +13,7 @@ const Activities = require('../models/activities');
 
 const dateHelper = require('../helpers/date_helper'); // helper pour formater les dates d'ouverture des events
 const { query } = require('express');
-
+const verifier = require('google-id-token-verifier');
 const googleAPIkey = 'AIzaSyBj3ezj3EuZSPYqywoLyZta1KjksX7Y0Og';
 cloudinary.config({
   cloud_name: 'dv56i9cvj',
@@ -212,6 +212,25 @@ router.post('/sign-in', async function (req, res, next) {
 
 });
 
+
+//ROUTE SIGN-IN/UP via Google
+
+router.get('/google-sign-in/:googleToken/:clientId', async function (req, res, next) {
+
+  verifier.verify(req.params.googleToken, req.params.clientId, async function (err, tokenInfo) {
+    if (!err) {
+      let findUser = await usersModel.findOne({ email: tokenInfo.email })
+      if (!findUser) {
+        res.json({ status: 'success', next: 'signup', userInfo: { email: tokenInfo.email, name: tokenInfo.name } })
+      } else {
+        res.json({ status: 'success', next: 'signin', token: findUser.token })
+      }
+    } else {
+      res.json({ status: 'falied', err })
+    }
+  });
+});
+
 // get the trips of a user
 router.get('/usertrips/:usertoken', async function (req, res, next) {
 
@@ -308,8 +327,6 @@ router.get('/refresh-activity/:activityId', async function (req, res, next) {
     ])
 
   res.json({ status: 'success', activity: findActivities.length > 0 ? findActivities[0] : [] })
-
-
 })
 
 
@@ -386,6 +403,7 @@ router.post('/trust-doda', async function (req, res, next) {
         myDoda.push(random);
 
       }
+      console.log('mydoda :   ', myDoda)
       total = myDoda.reduce((a, b) => (a + b.pricing), 0)
       console.log('trip total : ', total)
       console.log(queryTrip.budget, 'is budget');
@@ -411,8 +429,9 @@ router.post('/trust-doda', async function (req, res, next) {
 
     console.log('USER WISHES : ', queryTrip)
     console.log('YOUR GENERATED TRIP : ', myDoda)
-
-    res.json({ result: true, queryTrip, myDoda })
+    console.log('filtered categories    :  ', filteredCat);
+    console.log('querycategories    :  ', queryCategories);
+    res.json({ result: true, queryTrip, myDoda, total })
   }
 })
 
@@ -493,6 +512,42 @@ router.delete('/delete-user', async function (req, res, next) {
   res.json({ result })
 
 })
+
+// ROUTE SAVE TRIP
+
+router.post('/saveTrip', async function (req, res, next) {
+
+  let result = false;
+  let user = await usersModel.findOne({ token: req.body.user });
+
+  if (user) {
+    user.trips = [...user.trips, JSON.parse(req.body.tripData)];
+    let savedUser = await user.save();
+    if (savedUser) {
+      result = true;
+    }
+  }
+  res.json({ result });
+
+});
+
+// ROUTE EDIT TRIP
+router.put('/updateTrip', async function (req, res, next) {
+
+  let result = false;
+  let user = await usersModel.findOne({ token: req.body.user });
+
+  if (user) {
+    user.trips = [...user.trips.filter(trip => trip._id != req.body.tripId), JSON.parse(req.body.tripData)];
+    let savedUser = await user.save();
+    if (savedUser) {
+      result = true;
+    }
+  }
+
+  res.json({ result });
+
+});
 
 
 module.exports = router;
