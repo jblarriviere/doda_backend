@@ -13,7 +13,7 @@ const Activities = require('../models/activities');
 
 const dateHelper = require('../helpers/date_helper'); // helper pour formater les dates d'ouverture des events
 const { query } = require('express');
-
+const verifier = require('google-id-token-verifier');
 const googleAPIkey = 'AIzaSyBj3ezj3EuZSPYqywoLyZta1KjksX7Y0Og';
 cloudinary.config({
   cloud_name: 'dv56i9cvj',
