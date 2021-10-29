@@ -217,14 +217,14 @@ router.get('/usertrips/:usertoken', async function (req, res, next) {
 
   let trips = [];
   let result = false;
-  let user = await usersModel.findOne({token: req.params.usertoken}).populate('trips.activities');
-  
-  if(user) {
+  let user = await usersModel.findOne({ token: req.params.usertoken }).populate('trips.activities');
+
+  if (user) {
     result = true;
     trips = user.trips;
   }
 
-  res.json({result, trips});
+  res.json({ result, trips });
 
 });
 
@@ -243,7 +243,7 @@ router.get('/addrandomtrip/:usertoken', async function (req, res, next) {
     activities: []
   }
 
-  for(let i = 0 ; i < 3 ; i++ ) {
+  for (let i = 0; i < 3; i++) {
     newTrip.activities.push(activities[Math.floor(Math.random() * activities.length)]._id);
   }
 
@@ -408,7 +408,7 @@ router.post('/trust-doda', async function (req, res, next) {
     // });
     // ******************************************************************************************* //
 
-    
+
     console.log('USER WISHES : ', queryTrip)
     console.log('YOUR GENERATED TRIP : ', myDoda)
 
@@ -416,22 +416,81 @@ router.post('/trust-doda', async function (req, res, next) {
   }
 })
 
+// PROFILE ROUTES:
+
+// GET USER INFO
+
+router.get('/get-userInfo', async function (req, res, next) {
+
+  var result = false
+
+  let getUserInfo = await usersModel.findOne(
+    { token: req.query.tokenFromFront }
+  ).populate('likes').populate('dislikes')
+  //console.log(getUserInfo)
+
+  if(getUserInfo) {
+    res.json({
+      result: true,
+      userInfo: getUserInfo
+    })
+  }
+  else {
+    res.json({result})
+  }
+  
+})
+
+// UPDATE USER INFO
+
+router.put('/update-userInfo', async function (req, res, next) {
+
+  var result = false
+
+  let updateUserInfo = await usersModel.updateOne(
+    { token: req.body.tokenFromFront },
+    {
+      username: req.body.usernameFromFront,
+      email: req.body.emailFromFront,
+      password: bcrypt.hashSync(req.body.passwordFromFront, 10),
+      birthday: req.body.birthdayFromFront,
+      nationality: req.body.nationalityFromFront,
+    }
+  )
+
+  res.json({ result })
+})
+
+// UPDATE USER INTERESTS
+
+router.put('/update-userInterests', async function (req, res, next) {
+
+  var result = false
+
+  let updateUserInfo = await usersModel.updateOne(
+    { token: req.body.tokenFromFront },
+    { interests: JSON.parse(req.body.interestsFromFront) }
+  )
+
+  res.json({ result })
+})
+
 // DELETE USER
 router.delete('/delete-user', async function (req, res, next) {
 
   var result = false
-  
+
   let deleteUser = await usersModel.deleteOne(
-    {token: req.query.tokenFromFront}
+    { token: req.query.tokenFromFront }
   )
-  
+
   console.log(deleteUser)
 
-  if(deleteUser.deletedCount != 0){
+  if (deleteUser.deletedCount != 0) {
     result = true
   }
-  
-  res.json({result})
+
+  res.json({ result })
 
 })
 
