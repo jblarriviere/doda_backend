@@ -212,19 +212,38 @@ router.post('/sign-in', async function (req, res, next) {
 
 });
 
+
+//ROUTE SIGN-IN/UP via Google
+
+router.get('/google-sign-in/:googleToken/:clientId', async function (req, res, next) {
+
+  verifier.verify(req.params.googleToken, req.params.clientId, async function (err, tokenInfo) {
+    if (!err) {
+      let findUser = await usersModel.findOne({ email: tokenInfo.email })
+      if (!findUser) {
+        res.json({ status: 'success', next: 'signup', userInfo: { email: tokenInfo.email, name: tokenInfo.name } })
+      } else {
+        res.json({ status: 'success', next: 'signin', token: findUser.token })
+      }
+    } else {
+      res.json({ status: 'falied', err })
+    }
+  });
+});
+
 // get the trips of a user
 router.get('/usertrips/:usertoken', async function (req, res, next) {
 
   let trips = [];
   let result = false;
-  let user = await usersModel.findOne({token: req.params.usertoken}).populate('trips.activities');
-  
-  if(user) {
+  let user = await usersModel.findOne({ token: req.params.usertoken }).populate('trips.activities');
+
+  if (user) {
     result = true;
     trips = user.trips;
   }
 
-  res.json({result, trips});
+  res.json({ result, trips });
 
 });
 
@@ -243,7 +262,7 @@ router.get('/addrandomtrip/:usertoken', async function (req, res, next) {
     activities: []
   }
 
-  for(let i = 0 ; i < 3 ; i++ ) {
+  for (let i = 0; i < 3; i++) {
     newTrip.activities.push(activities[Math.floor(Math.random() * activities.length)]._id);
   }
 
@@ -407,10 +426,10 @@ router.post('/trust-doda', async function (req, res, next) {
     // });
     // ******************************************************************************************* //
 
-    
+
     console.log('USER WISHES : ', queryTrip)
     console.log('YOUR GENERATED TRIP : ', myDoda)
-    console.log('filtered categories    :  ', filteredCat );
+    console.log('filtered categories    :  ', filteredCat);
     console.log('querycategories    :  ', queryCategories);
     res.json({ result: true, queryTrip, myDoda })
   }
@@ -420,18 +439,18 @@ router.post('/trust-doda', async function (req, res, next) {
 router.delete('/delete-user', async function (req, res, next) {
 
   var result = false
-  
+
   let deleteUser = await usersModel.deleteOne(
-    {token: req.query.tokenFromFront}
+    { token: req.query.tokenFromFront }
   )
-  
+
   console.log(deleteUser)
 
-  if(deleteUser.deletedCount != 0){
+  if (deleteUser.deletedCount != 0) {
     result = true
   }
-  
-  res.json({result})
+
+  res.json({ result })
 
 })
 
@@ -440,16 +459,16 @@ router.delete('/delete-user', async function (req, res, next) {
 router.post('/saveTrip', async function (req, res, next) {
 
   let result = false;
-  let user = await usersModel.findOne({token: req.body.user});
+  let user = await usersModel.findOne({ token: req.body.user });
 
-  if(user) {
+  if (user) {
     user.trips = [...user.trips, JSON.parse(req.body.tripData)];
-    let savedUser = await user.save();  
-    if(savedUser) {
+    let savedUser = await user.save();
+    if (savedUser) {
       result = true;
     }
   }
-  res.json({result});
+  res.json({ result });
 
 });
 
@@ -459,14 +478,14 @@ router.put('/updateTrip', async function (req, res, next) {
   let result = false;
   let user = await usersModel.findOne({ token: req.body.user });
 
-  if(user) {
-     user.trips = [...user.trips.filter(trip => trip._id != req.body.tripId), JSON.parse(req.body.tripData)];
+  if (user) {
+    user.trips = [...user.trips.filter(trip => trip._id != req.body.tripId), JSON.parse(req.body.tripData)];
     let savedUser = await user.save();
-    if(savedUser) {
+    if (savedUser) {
       result = true;
     }
   }
- 
+
   res.json({ result });
 
 });
