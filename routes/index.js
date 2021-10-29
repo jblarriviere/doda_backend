@@ -256,7 +256,6 @@ router.get('/addrandomtrip/:usertoken', async function (req, res, next) {
 router.get('/bdd', async function (req, res, next) {
   let activity = await Activities.find()
   res.json({ activity })
-<<<<<<< HEAD
 })
 
 //Get all categories
@@ -309,8 +308,6 @@ router.get('/refresh-activity/:activityId', async function (req, res, next) {
     ])
 
   res.json({ status: 'success', activity: findActivities.length > 0 ? findActivities[0] : [] })
-=======
->>>>>>> trustDoda
 })
 
 
@@ -387,6 +384,7 @@ router.post('/trust-doda', async function (req, res, next) {
         myDoda.push(random);
 
       }
+      console.log('mydoda :   ', myDoda)
       total = myDoda.reduce((a, b) => (a + b.pricing), 0)
       console.log('trip total : ', total)
       console.log(queryTrip.budget, 'is budget');
@@ -412,7 +410,8 @@ router.post('/trust-doda', async function (req, res, next) {
     
     console.log('USER WISHES : ', queryTrip)
     console.log('YOUR GENERATED TRIP : ', myDoda)
-
+    console.log('filtered categories    :  ', filteredCat );
+    console.log('querycategories    :  ', queryCategories);
     res.json({ result: true, queryTrip, myDoda })
   }
 })
