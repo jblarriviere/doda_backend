@@ -412,7 +412,7 @@ router.post('/trust-doda', async function (req, res, next) {
     console.log('YOUR GENERATED TRIP : ', myDoda)
     console.log('filtered categories    :  ', filteredCat );
     console.log('querycategories    :  ', queryCategories);
-    res.json({ result: true, queryTrip, myDoda })
+    res.json({ result: true, queryTrip, myDoda, total })
   }
 })
 
