@@ -495,21 +495,30 @@ router.put('/update-userInterests', async function (req, res, next) {
 })
 
 // DELETE USER
-router.delete('/delete-user', async function (req, res, next) {
+router.post('/delete-user', async function (req, res, next) {
+
 
   var result = false
 
-  let deleteUser = await usersModel.deleteOne(
-    { token: req.query.tokenFromFront }
+  let findUser = await usersModel.findOne(
+    {token: req.body.tokenFromFront}
   )
+    //console.log('token', token)
+  if (bcrypt.compareSync(req.body.passwordFromFront, findUser.password)){
 
-  console.log(deleteUser)
-
+    //console.log('password', req.body.passwordFromFront)
+    let deleteUser = await usersModel.deleteOne(
+    {token: req.body.tokenFromFront }
+  )
+      console.log('deleteUser', deleteUser)
   if (deleteUser.deletedCount != 0) {
     result = true
   }
-
+  }
   res.json({ result })
+
+   
+  //console.log('result',result)
 
 })
 
