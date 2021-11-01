@@ -3,9 +3,6 @@ var router = express.Router();
 var mongoose = require('mongoose');
 var uid2 = require('uid2');
 var bcrypt = require('bcrypt')
-const cloudinary = require('cloudinary').v2;
-const axios = require('axios');
-const striptags = require('striptags');
 const faker = require('faker')
 
 var usersModel = require('../models/users')
@@ -14,119 +11,7 @@ const Activities = require('../models/activities');
 const dateHelper = require('../helpers/date_helper'); // helper pour formater les dates d'ouverture des events
 const { query } = require('express');
 const verifier = require('google-id-token-verifier');
-const googleAPIkey = 'AIzaSyBj3ezj3EuZSPYqywoLyZta1KjksX7Y0Og';
-cloudinary.config({
-  cloud_name: 'dv56i9cvj',
-  api_key: '263557444995769',
-  api_secret: 'jqGHKL6O1JqrBc9BLfAzv6u3KLw'
-});
 
-
-/* GET DATA FROM GOOGLE PLACES */
-router.get('/fill-activities-google/:type', async function (req, res, next) {
-
-  const searchType = req.params.type;
-
-  // on récupère les lieux via Gogle Places
-  var endpoint = {
-    method: 'get',
-    url: `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=48.887552%2C2.303735&radius=2000&type=${searchType}&key=${googleAPIkey}`,
-    headers: {}
-  };
-  let response = await axios(endpoint);
-
-  // on boucle sur chaque lieu retourné par la requete
-  response.data.results.forEach(async place => {
-
-    if (place.business_status !== 'OPERATIONAL' || !place.photos) { // si le business est fermé on prend pas
-      return
-    }
-
-    // on récupère les détails du lieu
-    var detailEndpoint = {
-      method: 'get',
-      url: `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=price_level%2Cwebsite%2Cformatted_address%2Cformatted_phone_number%2Copening_hours&key=${googleAPIkey}`,
-      headers: {}
-    };
-    let details = await axios(detailEndpoint);
-
-    if (!details.data.result.opening_hours) { // si y a pas les horaires on prends pas
-      return
-    }
-
-    // on récupère la photo et on l'enregistre dans cloudinary
-    let picUrl = await axios(`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${place.photos[0].photo_reference}&key=${googleAPIkey}`);
-    let cloudData = await cloudinary.uploader.upload(picUrl.request.res.responseUrl);
-
-    // on crée une activité avec toutes les données récupérées
-    let newActivity = new Activities({
-      title: place.name,
-      imgUrl: cloudData.url,
-      address: details.data.result.formatted_address,
-      latitude: place.geometry.location.lat,
-      longitude: place.geometry.location.lng,
-      telephone: details.data.result.formatted_phone_number,
-      category: searchType,
-      rating: place.rating,
-      nbRating: place.user_ratings_total,
-      openingHours: details.data.result.opening_hours.periods,
-      googleId: place.place_id,
-      pricing: details.data.result.price_level ?
-        Math.round(Math.random() * 10) * (details.data.result.price_level + 1) :
-        activity.pricing = 5 + Math.round(Math.random() * 10)
-    });
-
-    await newActivity.save();
-
-  })
-
-  res.json({ result: true })
-});
-
-/* GET EVENT INFOS FROM PARIS OPEN DATA */
-router.get('/fill-activities-paris/:type', async function (req, res, next) {
-
-  // on lance une recherche dans la Bdd Open Data Paris
-  let endpoint = `https://opendata.paris.fr/api/records/1.0/search/?dataset=que-faire-a-paris-&q=${req.params.type}&rows=20&geofilter.distance=48.887552%2C2.303735%2C2000`;
-  let response = await axios(endpoint);
-
-
-  // on boucle sur les évènements retournés
-  response.data.records.forEach(async event => {
-
-    // selon les infos dispos sur le prix, on le récupère ou on en génère un au hasard
-    let price;
-    if (event.fields.price_type === 'gratuit') {
-      price = 0;
-    } else if (event.fields.price_detail) {
-      price = event.fields.price_detail.match(/[0-9]+/) ? Number(event.fields.price_detail.match(/[0-9]+/)[0]) : Math.round(Math.random() * 20);
-    } else {
-      return
-    }
-
-    // à partir des données récupérées on crée une nouvelle activité
-    let newActivity = new Activities({
-      title: event.fields.title,
-      description: striptags(event.fields.desription),
-      imgUrl: event.fields.cover_url,
-      firstDay: event.fields.date_start,
-      lastDay: event.fields.date_end,
-      address: `${event.fields.address_street}, ${event.fields.address_zipcode} ${event.fields.address_city}`,
-      latitude: event.fields.lat_lon[0],
-      longitude: event.fields.lat_lon[1],
-      telephone: event.fields.access_phone,
-      website: event.fields.url,
-      pricing: price,
-      category: req.params.type,
-      openingHours: event.fields.occurrences ? dateHelper.parseOccurrences(event.fields.occurrences) : [{ open: { day: 0, time: "0000" } }],
-    });
-
-    await newActivity.save();
-
-  });
-
-  res.json({ result: true })
-});
 
 //ROUTE SIGN-UP
 
@@ -211,7 +96,6 @@ router.post('/sign-in', async function (req, res, next) {
   }
 
 });
-
 
 //ROUTE SIGN-IN/UP via Google
 
@@ -408,24 +292,6 @@ router.post('/trust-doda', async function (req, res, next) {
       console.log('trip total : ', total)
       console.log(queryTrip.budget, 'is budget');
     } while (total > queryTrip.budget)
-
-
-    //********************************  D O  N O T  E R A S E  ==>  M U S T  B E  M O V E D  T O  A P P R O P R I A T E  R O U T E *****************************//
-    //****** FORMAT GEOJSON BDD (index '2dSphere' on coll activities created via compass) ********//
-
-    //   let activitiesGeo = await Activities.find()
-    //   activitiesGeo.forEach(async function(doc) {
-    //     var point = {
-    //         _id : doc._id,
-    //         loc : {
-    //             type : "Point",
-    //             coordinates : [doc.longitude, doc.latitude]
-    //         }
-    //     };
-    //     await Activities.updateOne(doc, point);
-    // });
-    // ******************************************************************************************* //
-
 
     console.log('USER WISHES : ', queryTrip)
     console.log('YOUR GENERATED TRIP : ', myDoda)
