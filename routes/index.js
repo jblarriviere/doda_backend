@@ -424,5 +424,56 @@ router.put('/updateTrip', async function (req, res, next) {
 
 });
 
+// ROUTE GET USER LIKES
+
+router.get('/get-likes/:token', async function (req, res, next) {
+
+  let result = false;
+  let likes = [];
+  let user = await usersModel.findOne({ token: req.params.token });
+
+  if(user) {
+    result = true;
+    likes = [...user.likes];
+  }
+
+  res.json({ result, likes });
+
+});
+
+// ROUTE GET USER DISLIKES
+
+router.get('/get-dislikes/:token', async function (req, res, next) {
+
+  let result = false;
+  let dislikes = [];
+  let user = await usersModel.findOne({ token: req.params.token });
+
+  if (user) {
+    result = true;
+    dislikes = [...user.dislikes];
+  }
+
+  res.json({ result, dislikes });
+
+});
+
+router.get('/unlike-half/:token', async function (req, res, next) {
+
+  let user = await usersModel.findOne({ token: req.params.token });
+  let activities = await Activities.find();
+
+  if (user) {
+    result = true;
+    user.likes = activities.filter(act => act.category === 'restaurant').map(act => act.id);
+    
+    await user.save();
+  
+  }
+
+  res.json({ result : true });
+
+});
+
 
 module.exports = router;
