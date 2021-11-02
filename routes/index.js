@@ -458,20 +458,38 @@ router.get('/get-dislikes/:token', async function (req, res, next) {
 
 });
 
-router.get('/unlike-half/:token', async function (req, res, next) {
+// TOGGLE LIKE FOR A USER AND AN ACTIVITY
 
-  let user = await usersModel.findOne({ token: req.params.token });
-  let activities = await Activities.find();
+router.get('/toggle-like', async function (req, res, next) {
 
-  if (user) {
-    result = true;
-    user.likes = activities.filter(act => act.category === 'restaurant').map(act => act.id);
-    
-    await user.save();
+  let result = false;
+
+  let user = await usersModel.findOne({ token: req.query.userToken });
   
+  // if req.query.activityId is a valid ObjectId, find activity
+  let activity = null;
+  if (mongoose.isValidObjectId(req.query.activityId)) {
+    activity = await Activities.findById(req.query.activityId);
   }
 
-  res.json({ result : true });
+  if (user && activity) {
+    //si l'activité est déjà likée, on la retire des likes
+    if (user.likes.find(like => String(like) === req.query.activityId)) {
+      user.likes = user.likes.filter(like => String(like) !== req.query.activityId);
+    } 
+    else { //sinon, on la rajoute dans les likes
+      user.likes = [...user.likes, req.query.activityId];
+    }
+
+    let userSaved = await user.save();
+
+    if(userSaved) {
+      result = true;
+    }
+
+  }
+
+  res.json({ result });
 
 });
 
