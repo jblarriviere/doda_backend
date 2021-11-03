@@ -5,12 +5,15 @@ const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 const striptags = require('striptags');
 const Activities = require('../models/activities');
+const Users = require('../models/users');
 
-const googleAPIkey = 'AIzaSyBj3ezj3EuZSPYqywoLyZta1KjksX7Y0Og';
+const dateHelper = require('../helpers/date_helper')
+
+const googleAPIkey = process.env.PLACES_API_KEY;
 cloudinary.config({
   cloud_name: 'dv56i9cvj',
-  api_key: '263557444995769',
-  api_secret: 'jqGHKL6O1JqrBc9BLfAzv6u3KLw'
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 const scrapParams = {
@@ -75,7 +78,7 @@ router.get('/fill-activities-google/:type', async function (req, res, next) {
       googleId: place.place_id,
       pricing: details.data.result.price_level ?
         Math.round(Math.random() * 10) * (details.data.result.price_level + 1) :
-        activity.pricing = 5 + Math.round(Math.random() * 10)
+        5 + Math.round(Math.random() * 10)
     });
 
     await newActivity.save();
