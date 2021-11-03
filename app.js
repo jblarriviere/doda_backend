@@ -1,5 +1,5 @@
-require('./models/bddconnect');
 require('dotenv').config();
+require('./models/bddconnect');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
