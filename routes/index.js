@@ -4,6 +4,7 @@ var mongoose = require('mongoose');
 var uid2 = require('uid2');
 var bcrypt = require('bcrypt')
 const faker = require('faker')
+var request = require('sync-request');
 
 var usersModel = require('../models/users')
 const Activities = require('../models/activities');
@@ -97,10 +98,30 @@ router.post('/sign-in', async function (req, res, next) {
 
 });
 
+//ROUTE SIGN-IN/UP via Facebook
+router.get('/facebook-sign-in/:token', async function (req, res, next) {
+
+  const token = req.params.token
+  // const fields = ['id', 'first_name', 'last_name', 'gender', 'birthday', 'work']
+
+  var requete = request('GET', `https://graph.facebook.com/me?access_token=${token}&fields=email,name,birthday,gender,work`);
+  var resultWS = JSON.parse(requete.body);
+  console.log(resultWS)
+  if (!resultWS.email) {
+    res.json({ status: 'falied', err: 'No email found, try again?' })
+  } else {
+    let findUser = await usersModel.findOne({ email: resultWS.email })
+    if (!findUser) {
+      res.json({ status: 'success', next: 'signup', userInfo: { email: resultWS.email, name: resultWS.name } })
+    } else {
+      res.json({ status: 'success', next: 'signin', token: findUser.token })
+    }
+  }
+});
+
+
 //ROUTE SIGN-IN/UP via Google
-
 router.get('/google-sign-in/:googleToken/:clientId', async function (req, res, next) {
-
   verifier.verify(req.params.googleToken, req.params.clientId, async function (err, tokenInfo) {
     if (!err) {
       let findUser = await usersModel.findOne({ email: tokenInfo.email })
@@ -113,6 +134,24 @@ router.get('/google-sign-in/:googleToken/:clientId', async function (req, res, n
       res.json({ status: 'falied', err })
     }
   });
+});
+
+//ROUTE SIGN-IN/UP via Apple
+router.get('/apple-sign-in/:credential', async function (req, res, next) {
+
+  const credential = JSON.parse(req.params.credential)
+  /* TODO: CHECK  identityToken via Signup an app in https://developer.apple.com/( pay 99$ for an account) 
+  https://developer.apple.com/documentation/sign_in_with_apple/generate_and_validate_tokens*/
+  if (!credential.email) {
+    res.json({ status: 'falied', err: 'No email found, try again?' })
+  } else {
+    let findUser = await usersModel.findOne({ email: credential.email })
+    if (!findUser) {
+      res.json({ status: 'success', next: 'signup', userInfo: { email: credential.email, name: `${credential?.fullName?.familyName} ${credential?.fullName?.givenName}` } })
+    } else {
+      res.json({ status: 'success', next: 'signin', token: findUser.token })
+    }
+  }
 });
 
 // get the trips of a user
