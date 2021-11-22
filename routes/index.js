@@ -4,6 +4,7 @@ var mongoose = require('mongoose');
 var uid2 = require('uid2');
 var bcrypt = require('bcrypt')
 const faker = require('faker')
+var request = require('sync-request');
 
 var usersModel = require('../models/users')
 const Activities = require('../models/activities');
@@ -97,10 +98,30 @@ router.post('/sign-in', async function (req, res, next) {
 
 });
 
+//ROUTE SIGN-IN/UP via Facebook
+router.get('/facebook-sign-in/:token', async function (req, res, next) {
+
+  const token = req.params.token
+  // const fields = ['id', 'first_name', 'last_name', 'gender', 'birthday', 'work']
+
+  var requete = request('GET', `https://graph.facebook.com/me?access_token=${token}&fields=email,name,birthday,gender,work`);
+  var resultWS = JSON.parse(requete.body);
+  console.log(resultWS)
+  if (!resultWS.email) {
+    res.json({ status: 'falied', err: 'No email found, try again?' })
+  } else {
+    let findUser = await usersModel.findOne({ email: resultWS.email })
+    if (!findUser) {
+      res.json({ status: 'success', next: 'signup', userInfo: { email: resultWS.email, name: resultWS.name } })
+    } else {
+      res.json({ status: 'success', next: 'signin', token: findUser.token })
+    }
+  }
+});
+
+
 //ROUTE SIGN-IN/UP via Google
-
 router.get('/google-sign-in/:googleToken/:clientId', async function (req, res, next) {
-
   verifier.verify(req.params.googleToken, req.params.clientId, async function (err, tokenInfo) {
     if (!err) {
       let findUser = await usersModel.findOne({ email: tokenInfo.email })
@@ -113,6 +134,24 @@ router.get('/google-sign-in/:googleToken/:clientId', async function (req, res, n
       res.json({ status: 'falied', err })
     }
   });
+});
+
+//ROUTE SIGN-IN/UP via Apple
+router.get('/apple-sign-in/:credential', async function (req, res, next) {
+
+  const credential = JSON.parse(req.params.credential)
+  /* TODO: CHECK  identityToken via Signup an app in https://developer.apple.com/( pay 99$ for an account) 
+  https://developer.apple.com/documentation/sign_in_with_apple/generate_and_validate_tokens*/
+  if (!credential.email) {
+    res.json({ status: 'falied', err: 'No email found, try again?' })
+  } else {
+    let findUser = await usersModel.findOne({ email: credential.email })
+    if (!findUser) {
+      res.json({ status: 'success', next: 'signup', userInfo: { email: credential.email, name: `${credential?.fullName?.familyName} ${credential?.fullName?.givenName}` } })
+    } else {
+      res.json({ status: 'success', next: 'signin', token: findUser.token })
+    }
+  }
 });
 
 // get the trips of a user
@@ -192,15 +231,24 @@ router.get('/random-trip', async function (req, res, next) {
   }
 });
 
-router.get('/refresh-activity/:activityId', async function (req, res, next) {
+router.get('/refresh-activity/:activityId/:otherActities', async function (req, res, next) {
   const activity = await Activities.findById(req.params.activityId);
+  const otherActities = JSON.parse(req.params.otherActities)
+  const others = []
+  for (let i = 0; i < otherActities.length; i++) {
+    const found = await Activities.findById(otherActities[i])
+    if (found) {
+      others.push(found._id)
+    }
+  }
   const findActivities = await Activities.aggregate(
     [
       {
         '$match': {
           'category': activity.category,
           '_id': {
-            '$ne': activity._id
+            '$ne': activity._id,
+            '$nin': others
           }
         }
       }, {
@@ -209,7 +257,6 @@ router.get('/refresh-activity/:activityId', async function (req, res, next) {
         }
       }
     ])
-
   res.json({ status: 'success', activity: findActivities.length > 0 ? findActivities[0] : [] })
 })
 
@@ -314,16 +361,16 @@ router.get('/get-userInfo', async function (req, res, next) {
   ).populate('likes').populate('dislikes')
   //console.log(getUserInfo)
 
-  if(getUserInfo) {
+  if (getUserInfo) {
     res.json({
       result: true,
       userInfo: getUserInfo
     })
   }
   else {
-    res.json({result})
+    res.json({ result })
   }
-  
+
 })
 
 // UPDATE USER INFO
@@ -367,23 +414,23 @@ router.post('/delete-user', async function (req, res, next) {
   var result = false
 
   let findUser = await usersModel.findOne(
-    {token: req.body.tokenFromFront}
+    { token: req.body.tokenFromFront }
   )
-    //console.log('token', token)
-  if (bcrypt.compareSync(req.body.passwordFromFront, findUser.password)){
+  //console.log('token', token)
+  if (bcrypt.compareSync(req.body.passwordFromFront, findUser.password)) {
 
     //console.log('password', req.body.passwordFromFront)
     let deleteUser = await usersModel.deleteOne(
-    {token: req.body.tokenFromFront }
-  )
-      console.log('deleteUser', deleteUser)
-  if (deleteUser.deletedCount != 0) {
-    result = true
-  }
+      { token: req.body.tokenFromFront }
+    )
+    console.log('deleteUser', deleteUser)
+    if (deleteUser.deletedCount != 0) {
+      result = true
+    }
   }
   res.json({ result })
 
-   
+
   //console.log('result',result)
 
 })
@@ -432,7 +479,7 @@ router.get('/get-likes/:token', async function (req, res, next) {
   let likes = [];
   let user = await usersModel.findOne({ token: req.params.token });
 
-  if(user) {
+  if (user) {
     result = true;
     likes = [...user.likes];
   }
@@ -465,7 +512,7 @@ router.get('/toggle-like', async function (req, res, next) {
   let result = false;
 
   let user = await usersModel.findOne({ token: req.query.userToken });
-  
+
   // if req.query.activityId is a valid ObjectId, find activity
   let activity = null;
   if (mongoose.isValidObjectId(req.query.activityId)) {
@@ -476,14 +523,14 @@ router.get('/toggle-like', async function (req, res, next) {
     //si l'activité est déjà likée, on la retire des likes
     if (user.likes.find(like => String(like) === req.query.activityId)) {
       user.likes = user.likes.filter(like => String(like) !== req.query.activityId);
-    } 
+    }
     else { //sinon, on la rajoute dans les likes
       user.likes = [...user.likes, req.query.activityId];
     }
 
     let userSaved = await user.save();
 
-    if(userSaved) {
+    if (userSaved) {
       result = true;
     }
 
